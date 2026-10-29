@@ -311,7 +311,12 @@ const padStart = (s: string, n: number) =>
  *   Driver
  *   호텔공항   80 × (1+0)    80
  */
-function tableText(title: string, lines: SnapshotLine[]) {
+function tableText(
+  title: string,
+  lines: SnapshotLine[],
+  totalLabel: string,
+  total: number
+) {
   const rows = lines
     .filter(l => l.amount !== 0)
     .map(l => ({
@@ -322,17 +327,27 @@ function tableText(title: string, lines: SnapshotLine[]) {
     }));
   const max = (f: (r: (typeof rows)[number]) => string) =>
     Math.max(0, ...rows.map(r => width(f(r))));
-  const [wName, wPrice, wAmount] = [
+  const totalText = money(total);
+  const [wName, wPrice, wWeeks] = [
     max(r => r.name),
     max(r => r.price),
-    max(r => r.amount),
+    max(r => r.weeks),
   ];
+  const wAmount = Math.max(
+    max(r => r.amount),
+    width(totalText)
+  );
+  // total sits in the amount column, label at the left edge
+  const lead = rows.length
+    ? wName + 2 + wPrice + 3 + wWeeks + 2
+    : width(totalLabel) + 2;
   return [
     title,
     ...rows.map(
       r =>
-        `${padEnd(r.name, wName)}  ${padStart(r.price, wPrice)} × ${r.weeks}  ${padStart(r.amount, wAmount)}`
+        `${padEnd(r.name, wName)}  ${padStart(r.price, wPrice)} × ${padEnd(r.weeks, wWeeks)}  ${padStart(r.amount, wAmount)}`
     ),
+    `${padEnd(totalLabel, lead)}${padStart(totalText, wAmount)}`,
   ].join('\n');
 }
 
@@ -350,7 +365,9 @@ function ItemTable(props: {
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(tableText(title, lines));
+      await navigator.clipboard.writeText(
+        tableText(title, lines, totalLabel, total)
+      );
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
