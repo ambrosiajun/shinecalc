@@ -1,15 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  History,
-  LogOut,
-  Minus,
-  Plus,
-  RotateCcw,
-  Save,
-  Settings,
-} from 'lucide-react';
+import { History, LogOut, RotateCcw, Save, Settings } from 'lucide-react';
 import { calculate, money } from '@/lib/calc';
 import type { Config, HistoryEntry, PriceItem } from '@/lib/types';
 import HistoryPanel from './HistoryPanel';
@@ -256,6 +248,22 @@ function Row({
   );
 }
 
+/** Enter / ↓ → next count field, ↑ → previous (across both tables). */
+function moveFocus(e: React.KeyboardEvent<HTMLInputElement>) {
+  const step =
+    e.key === 'Enter' || e.key === 'ArrowDown'
+      ? 1
+      : e.key === 'ArrowUp'
+        ? -1
+        : 0;
+  if (!step) return;
+  e.preventDefault();
+  const all = Array.from(
+    document.querySelectorAll<HTMLInputElement>('input[data-count-input]')
+  );
+  all[all.indexOf(e.currentTarget) + step]?.focus();
+}
+
 function ItemTable(props: {
   title: string;
   items: PriceItem[];
@@ -284,44 +292,39 @@ function ItemTable(props: {
             return (
               <tr
                 key={it.id}
-                className={`border-t border-gray-100 ${c ? 'bg-blue-50/60' : ''}`}
+                onClick={e => e.currentTarget.querySelector('input')?.focus()}
+                className={[
+                  'border-t border-gray-100 cursor-pointer',
+                  c ? 'bg-blue-50/60' : '',
+                  'hover:bg-gray-50',
+                  // the row being edited
+                  'focus-within:bg-amber-100 focus-within:shadow-[inset_4px_0_0_#f59e0b]',
+                ].join(' ')}
               >
-                <td className="px-3 py-1.5">
+                <td className="px-3 py-2">
                   {it.name}
                   <div className="sm:hidden text-xs text-gray-400 font-mono">
                     {money(it.price)}
                   </div>
                 </td>
-                <td className="hidden sm:table-cell px-2 py-1.5 text-right font-mono text-gray-500">
+                <td className="hidden sm:table-cell px-2 py-2 text-right font-mono text-gray-500">
                   {money(it.price)}
                 </td>
-                <td className="px-2 py-1">
-                  <div className="flex items-center justify-center gap-1">
-                    <button
-                      onClick={() => setCount(it.id, c - 1)}
-                      className="size-8 sm:size-6 flex items-center justify-center rounded bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-600"
-                      aria-label="minus"
-                    >
-                      <Minus className="size-3" />
-                    </button>
-                    <input
-                      type="number"
-                      min={0}
-                      inputMode="numeric"
-                      value={c || ''}
-                      onChange={e => setCount(it.id, Number(e.target.value))}
-                      className="w-9 text-center border border-gray-200 rounded py-1 sm:py-0.5 font-mono text-base sm:text-sm"
-                    />
-                    <button
-                      onClick={() => setCount(it.id, c + 1)}
-                      className="size-8 sm:size-6 flex items-center justify-center rounded bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-600"
-                      aria-label="plus"
-                    >
-                      <Plus className="size-3" />
-                    </button>
-                  </div>
+                <td className="px-2 py-1 text-center">
+                  <input
+                    type="number"
+                    min={0}
+                    inputMode="numeric"
+                    enterKeyHint="next"
+                    data-count-input
+                    value={c || ''}
+                    onFocus={e => e.currentTarget.select()}
+                    onChange={e => setCount(it.id, Number(e.target.value))}
+                    onKeyDown={moveFocus}
+                    className="w-14 text-center border border-gray-300 rounded py-1 font-mono text-base sm:text-sm bg-white focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-300"
+                  />
                 </td>
-                <td className="px-3 py-1.5 text-right font-mono">
+                <td className="px-3 py-2 text-right font-mono">
                   {money(it.price * c)}
                 </td>
               </tr>
