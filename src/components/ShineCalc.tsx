@@ -1,9 +1,23 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { History, LogOut, RotateCcw, Save, Settings } from 'lucide-react';
+import {
+  Check,
+  Copy,
+  History,
+  LogOut,
+  RotateCcw,
+  Save,
+  Settings,
+} from 'lucide-react';
 import { calculate, money } from '@/lib/calc';
-import type { Config, HistoryEntry, PriceItem } from '@/lib/types';
+import type {
+  Config,
+  Counts,
+  HistoryEntry,
+  PriceItem,
+  SnapshotLine,
+} from '@/lib/types';
 import HistoryPanel from './HistoryPanel';
 import PriceEditor from './PriceEditor';
 
@@ -17,7 +31,7 @@ const today = () => {
 export default function ShineCalc() {
   const [config, setConfig] = useState<Config | null>(null);
   const [error, setError] = useState('');
-  const [counts, setCounts] = useState<Record<number, number>>({});
+  const [counts, setCounts] = useState<Counts>({});
   const [workDate, setWorkDate] = useState(today);
   const [memo, setMemo] = useState('');
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -49,8 +63,14 @@ export default function ShineCalc() {
     [config, counts]
   );
 
-  const setCount = (id: number, n: number) =>
-    setCounts(c => ({ ...c, [id]: Math.max(0, Math.floor(n) || 0) }));
+  const setCount = (id: number, week: Week, n: number) =>
+    setCounts(c => ({
+      ...c,
+      [id]: {
+        ...(c[id] ?? { week1: 0, week2: 0 }),
+        [week]: Math.max(0, Math.floor(n) || 0),
+      },
+    }));
 
   const save = async () => {
     if (!snapshot) return;
@@ -143,6 +163,7 @@ export default function ShineCalc() {
             items={shineItems}
             counts={counts}
             setCount={setCount}
+            lines={snapshot.shine}
             total={snapshot.shineTotal}
             totalLabel="합계"
           />
@@ -151,6 +172,7 @@ export default function ShineCalc() {
             items={driverItems}
             counts={counts}
             setCount={setCount}
+            lines={snapshot.driver}
             total={snapshot.driverTotal}
             totalLabel="total"
           />
@@ -248,7 +270,9 @@ function Row({
   );
 }
 
-/** Enter / ↓ → next count field, ↑ → previous (across both tables). */
+type Week = 'week1' | 'week2';
+
+/** Enter / ↓ → same week field on the next row, ↑ → previous row (across both tables). */
 function moveFocus(e: React.KeyboardEvent<HTMLInputElement>) {
   const step =
     e.key === 'Enter' || e.key === 'ArrowDown'
@@ -258,21 +282,77 @@ function moveFocus(e: React.KeyboardEvent<HTMLInputElement>) {
         : 0;
   if (!step) return;
   e.preventDefault();
+  const week = e.currentTarget.dataset.countInput;
   const all = Array.from(
-    document.querySelectorAll<HTMLInputElement>('input[data-count-input]')
+    document.querySelectorAll<HTMLInputElement>(
+      `input[data-count-input="${week}"]`
+    )
   );
   all[all.indexOf(e.currentTarget) + step]?.focus();
+}
+
+/** Tab-separated, so it reads as text and pastes cleanly into a spreadsheet. */
+function tableText(
+  title: string,
+  lines: SnapshotLine[],
+  totalLabel: string,
+  total: number
+) {
+  const rows = [
+    [title, '가격', 'Week1', 'Week2', '금액'],
+    ...lines.map(l => [
+      l.name,
+      l.price,
+      l.week1 || '',
+      l.week2 || '',
+      l.amount,
+    ]),
+    [totalLabel, '', '', '', total],
+  ];
+  return rows.map(r => r.join('\t')).join('\n');
 }
 
 function ItemTable(props: {
   title: string;
   items: PriceItem[];
-  counts: Record<number, number>;
-  setCount: (id: number, n: number) => void;
+  counts: Counts;
+  setCount: (id: number, week: Week, n: number) => void;
+  lines: SnapshotLine[];
   total: number;
   totalLabel: string;
 }) {
-  const { title, items, counts, setCount, total, totalLabel } = props;
+  const { title, items, counts, setCount, lines, total, totalLabel } = props;
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(
+        tableText(title, lines, totalLabel, total)
+      );
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      alert('복사 실패');
+    }
+  };
+
+  const weekInput = (it: PriceItem, week: Week) => (
+    <td className="px-1 sm:px-2 py-1 text-center">
+      <input
+        type="number"
+        min={0}
+        inputMode="numeric"
+        enterKeyHint="next"
+        data-count-input={week}
+        value={counts[it.id]?.[week] || ''}
+        onFocus={e => e.currentTarget.select()}
+        onChange={e => setCount(it.id, week, Number(e.target.value))}
+        onKeyDown={moveFocus}
+        className="w-11 sm:w-14 text-center border border-gray-300 rounded py-1 font-mono text-base sm:text-sm bg-white focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-300"
+      />
+    </td>
+  );
+
   return (
     <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <table className="w-full text-sm">
@@ -282,20 +362,28 @@ function ItemTable(props: {
             <th className="hidden sm:table-cell text-right font-normal px-2 py-2">
               가격
             </th>
-            <th className="text-center font-normal px-2 py-2">횟수</th>
+            <th className="text-center font-normal px-1 sm:px-2 py-2 text-xs sm:text-sm">
+              Week1
+            </th>
+            <th className="text-center font-normal px-1 sm:px-2 py-2 text-xs sm:text-sm">
+              Week2
+            </th>
             <th className="text-right font-normal px-3 py-2">금액</th>
           </tr>
         </thead>
         <tbody>
-          {items.map(it => {
-            const c = counts[it.id] || 0;
+          {lines.map((l, i) => {
+            const it = items[i];
             return (
               <tr
                 key={it.id}
-                onClick={e => e.currentTarget.querySelector('input')?.focus()}
+                onClick={e => {
+                  if (!(e.target instanceof HTMLInputElement))
+                    e.currentTarget.querySelector('input')?.focus();
+                }}
                 className={[
                   'border-t border-gray-100 cursor-pointer',
-                  c ? 'bg-blue-50/60' : '',
+                  l.count ? 'bg-blue-50/60' : '',
                   'hover:bg-gray-50',
                   // the row being edited
                   'focus-within:bg-amber-100 focus-within:shadow-[inset_4px_0_0_#f59e0b]',
@@ -310,22 +398,10 @@ function ItemTable(props: {
                 <td className="hidden sm:table-cell px-2 py-2 text-right font-mono text-gray-500">
                   {money(it.price)}
                 </td>
-                <td className="px-2 py-1 text-center">
-                  <input
-                    type="number"
-                    min={0}
-                    inputMode="numeric"
-                    enterKeyHint="next"
-                    data-count-input
-                    value={c || ''}
-                    onFocus={e => e.currentTarget.select()}
-                    onChange={e => setCount(it.id, Number(e.target.value))}
-                    onKeyDown={moveFocus}
-                    className="w-14 text-center border border-gray-300 rounded py-1 font-mono text-base sm:text-sm bg-white focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-300"
-                  />
-                </td>
+                {weekInput(it, 'week1')}
+                {weekInput(it, 'week2')}
                 <td className="px-3 py-2 text-right font-mono">
-                  {money(it.price * c)}
+                  {money(l.amount)}
                 </td>
               </tr>
             );
@@ -333,19 +409,30 @@ function ItemTable(props: {
         </tbody>
         <tfoot>
           <tr className="border-t-2 border-gray-200 font-semibold">
-            <td
-              colSpan={2}
-              className="sm:hidden px-3 py-2 text-right text-gray-600"
-            >
-              {totalLabel}
+            <td colSpan={5} className="px-3 py-2">
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  onClick={copy}
+                  className={[
+                    'flex items-center gap-1 px-2 py-1 rounded border text-xs font-normal',
+                    copied
+                      ? 'border-green-300 text-green-600 bg-green-50'
+                      : 'border-gray-300 text-gray-600 hover:bg-gray-50',
+                  ].join(' ')}
+                >
+                  {copied ? (
+                    <Check className="size-3" />
+                  ) : (
+                    <Copy className="size-3" />
+                  )}
+                  {copied ? 'Copied' : 'Copy to text'}
+                </button>
+                <span className="text-gray-600">{totalLabel}</span>
+                <span className="font-mono min-w-16 text-right">
+                  {money(total)}
+                </span>
+              </div>
             </td>
-            <td
-              colSpan={3}
-              className="hidden sm:table-cell px-3 py-2 text-right text-gray-600"
-            >
-              {totalLabel}
-            </td>
-            <td className="px-3 py-2 text-right font-mono">{money(total)}</td>
           </tr>
         </tfoot>
       </table>

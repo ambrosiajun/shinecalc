@@ -13,10 +13,15 @@ export type Config = {
   items: PriceItem[];
 };
 
+/** Per-item counts entered for each week. */
+export type Counts = Record<number, { week1: number; week2: number }>;
+
 export type SnapshotLine = {
   name: string;
   price: number;
-  count: number;
+  week1?: number; // absent in records saved before the week split
+  week2?: number;
+  count: number; // week1 + week2
   amount: number;
 };
 

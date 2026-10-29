@@ -1,16 +1,16 @@
-import type { PriceItem, Snapshot, SnapshotLine } from './types';
+import type { Counts, PriceItem, Snapshot, SnapshotLine } from './types';
 
 export const round2 = (n: number) => Math.round(n * 100) / 100;
 
-const lines = (
-  items: PriceItem[],
-  counts: Record<number, number>
-): SnapshotLine[] =>
+const lines = (items: PriceItem[], counts: Counts): SnapshotLine[] =>
   items.map(it => {
-    const count = counts[it.id] || 0;
+    const { week1 = 0, week2 = 0 } = counts[it.id] ?? {};
+    const count = week1 + week2;
     return {
       name: it.name,
       price: it.price,
+      week1,
+      week2,
       count,
       amount: round2(it.price * count),
     };
@@ -26,7 +26,7 @@ const sum = (ls: SnapshotLine[]) =>
 export function calculate(
   fixedSalary: number,
   items: PriceItem[],
-  counts: Record<number, number>
+  counts: Counts
 ): Snapshot {
   const shine = lines(
     items.filter(i => i.category === 'shine'),

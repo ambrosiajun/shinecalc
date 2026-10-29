@@ -40,7 +40,7 @@ export default function HistoryPanel({
           'bg-white flex flex-col border-gray-200',
           'fixed inset-y-0 right-0 z-50 w-[88vw] max-w-sm shadow-2xl transition-transform duration-200',
           drawerOpen ? 'translate-x-0' : 'translate-x-full',
-          'lg:static lg:translate-x-0 lg:w-96 lg:max-w-none lg:shrink-0 lg:shadow-none lg:border-l lg:h-screen lg:sticky lg:top-0',
+          'lg:static lg:z-auto lg:translate-x-0 lg:w-96 lg:max-w-none lg:shrink-0 lg:shadow-none lg:border-l lg:h-screen lg:sticky lg:top-0',
         ].join(' ')}
       >
         <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 font-semibold text-gray-700">
@@ -167,7 +167,10 @@ function Lines({ title, lines }: { title: string; lines: SnapshotLine[] }) {
               <tr key={i}>
                 <td className="font-sans">{l.name}</td>
                 <td className="text-right text-gray-400">
-                  {money(l.price)} × {l.count}
+                  {money(l.price)} ×{' '}
+                  {l.week1 !== undefined
+                    ? `(${l.week1}+${l.week2 ?? 0})`
+                    : l.count}
                 </td>
                 <td className="text-right w-16">{money(l.amount)}</td>
               </tr>
