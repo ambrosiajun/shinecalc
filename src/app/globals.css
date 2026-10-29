@@ -1,0 +1,29 @@
+@import 'tailwindcss';
+
+body {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+@utility btn-ghost {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #4b5563;
+  &:hover {
+    background: #f9fafb;
+  }
+}
