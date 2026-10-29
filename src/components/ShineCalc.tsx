@@ -291,25 +291,49 @@ function moveFocus(e: React.KeyboardEvent<HTMLInputElement>) {
   all[all.indexOf(e.currentTarget) + step]?.focus();
 }
 
-/** Tab-separated, so it reads as text and pastes cleanly into a spreadsheet. */
-function tableText(
-  title: string,
-  lines: SnapshotLine[],
-  totalLabel: string,
-  total: number
-) {
-  const rows = [
-    [title, '가격', 'Week1', 'Week2', '금액'],
-    ...lines.map(l => [
-      l.name,
-      l.price,
-      l.week1 || '',
-      l.week2 || '',
-      l.amount,
-    ]),
-    [totalLabel, '', '', '', total],
+/** Display width: Hangul and other full-width chars take two columns. */
+const width = (s: string) =>
+  Array.from(s).reduce(
+    (w, ch) =>
+      w +
+      (/[\u1100-\u11ff\u3000-\u9fff\uac00-\ud7af\uff00-\uffef]/.test(ch)
+        ? 2
+        : 1),
+    0
+  );
+const padEnd = (s: string, n: number) =>
+  s + ' '.repeat(Math.max(0, n - width(s)));
+const padStart = (s: string, n: number) =>
+  ' '.repeat(Math.max(0, n - width(s))) + s;
+
+/**
+ * Same layout as the history panel, rows with an amount only:
+ *   Driver
+ *   호텔공항   80 × (1+0)    80
+ */
+function tableText(title: string, lines: SnapshotLine[]) {
+  const rows = lines
+    .filter(l => l.amount !== 0)
+    .map(l => ({
+      name: l.name,
+      price: money(l.price),
+      weeks: `(${l.week1 ?? 0}+${l.week2 ?? 0})`,
+      amount: money(l.amount),
+    }));
+  const max = (f: (r: (typeof rows)[number]) => string) =>
+    Math.max(0, ...rows.map(r => width(f(r))));
+  const [wName, wPrice, wAmount] = [
+    max(r => r.name),
+    max(r => r.price),
+    max(r => r.amount),
   ];
-  return rows.map(r => r.join('\t')).join('\n');
+  return [
+    title,
+    ...rows.map(
+      r =>
+        `${padEnd(r.name, wName)}  ${padStart(r.price, wPrice)} × ${r.weeks}  ${padStart(r.amount, wAmount)}`
+    ),
+  ].join('\n');
 }
 
 function ItemTable(props: {
@@ -326,9 +350,7 @@ function ItemTable(props: {
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(
-        tableText(title, lines, totalLabel, total)
-      );
+      await navigator.clipboard.writeText(tableText(title, lines));
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
