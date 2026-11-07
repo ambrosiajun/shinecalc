@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { RotateCcw, Search } from 'lucide-react';
-import type { Category, Entry } from '@/lib/types';
+import type { Category, Entry, PriceItem } from '@/lib/types';
 import EntryTableView from './EntryTableView';
 
 type Filters = { from: string; to: string; item: string; customer: string };
@@ -16,6 +16,15 @@ export default function Records() {
     { category: Category; item_name: string }[]
   >([]);
   const [error, setError] = useState('');
+  const [priceItems, setPriceItems] = useState<PriceItem[]>([]);
+  // Bumped after an edit / delete so the list (and filters' item list) reloads.
+  const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    fetch('/api/config')
+      .then(r => (r.ok ? r.json() : null))
+      .then(c => c && setPriceItems(c.items));
+  }, []);
 
   // Debounce so typing a customer name doesn't fire a request per key.
   useEffect(() => {
@@ -30,7 +39,38 @@ export default function Records() {
       setItems(data.items);
     }, 250);
     return () => clearTimeout(t);
-  }, [filters]);
+  }, [filters, reload]);
+
+  const saveEntry = async (
+    id: number,
+    draft: {
+      entry_date: string;
+      customer: string;
+      item_name: string;
+      price: string;
+    }
+  ) => {
+    const res = await fetch(`/api/entries/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(draft),
+    });
+    if (!res.ok) {
+      alert((await res.json().catch(() => ({}))).error ?? '수정 실패');
+      return false;
+    }
+    const updated: Entry = await res.json();
+    setEntries(es => es?.map(e => (e.id === id ? updated : e)) ?? null);
+    setReload(n => n + 1); // re-apply filters to the edited row
+    return true;
+  };
+
+  const deleteEntry = async (id: number) => {
+    const res = await fetch(`/api/entries/${id}`, { method: 'DELETE' });
+    if (!res.ok) return alert('삭제 실패');
+    setEntries(es => es?.filter(e => e.id !== id) ?? null);
+    setReload(n => n + 1);
+  };
 
   const set = (patch: Partial<Filters>) =>
     setFilters(f => ({ ...f, ...patch }));
@@ -103,12 +143,18 @@ export default function Records() {
           <EntryTableView
             title="Shine"
             entries={entries.filter(e => e.category === 'shine')}
+            priceItems={priceItems.filter(i => i.category === 'shine')}
+            onSave={saveEntry}
+            onDelete={deleteEntry}
             totalLabel="합계"
             empty="조건에 맞는 내역이 없습니다"
           />
           <EntryTableView
             title="Driver"
             entries={entries.filter(e => e.category === 'driver')}
+            priceItems={priceItems.filter(i => i.category === 'driver')}
+            onSave={saveEntry}
+            onDelete={deleteEntry}
             totalLabel="total"
             empty="조건에 맞는 내역이 없습니다"
           />
