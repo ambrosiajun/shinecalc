@@ -2,17 +2,20 @@
 
 Shine 정산 계산기 (Next.js 14 + React + Postgres), Vercel 배포용.
 
-```
-Shine 합계 − Fixed Salary = 차액
-차액 − Driver total      = 총받을돈
-```
+## 메뉴
 
-- 가격표(`shine_prices`)와 Fixed Salary(`shine_settings`)는 DB 테이블 — 우측 상단 ⚙️ 에서 수정
-- 저장하면 날짜 + 계산 결과 전체를 JSON 으로 `shine_history.data` 에 저장
-  (당시 Fixed / 가격 / 횟수 스냅샷 포함 → 나중에 가격이 바뀌어도 기록은 그대로)
-- 우측 History 패널 (모바일에선 🕘 버튼 → 드로어), JSON 보기 / 삭제
-- 우측 하단 플로팅 계산기 (invoice-system 의 FloatingCalculator)
-- 비밀번호 로그인 (쿠키 30일)
+| 경로 | 내용 |
+| --- | --- |
+| `/` 입력 | Shine / Driver 표에 `날짜 · 고객이름 · 항목 · 가격` 줄 단위로 입력 → 저장 (한 번 저장 = 한 묶음) |
+| `/history` 히스토리 | 저장한 묶음 단위로 Shine / Driver 내역 |
+| `/records` 전체 내역 | 묶음과 상관없이 모든 줄. 날짜 범위 · 항목 · 고객이름 필터 |
+| `/old-page` | 이전 Week1/Week2 횟수 계산기 (Fixed Salary 차감) |
+
+- 각 표의 합계 옆 **Copy to text** 로 표 내용을 텍스트로 복사
+- 항목을 고르면 가격표 가격이 들어가고, 줄마다 수정 가능. 저장 시 그 가격이 그대로 남음
+- 가격표(`shine_prices`)·Fixed Salary(`shine_settings`)는 ⚙️ 에서 수정
+- 새 입력 데이터: `shine_batches` (저장 묶음), `shine_entries` (줄)
+- 우측 하단 플로팅 계산기, 비밀번호 로그인 (3회 틀리면 새로고침 필요)
 
 ## Env
 

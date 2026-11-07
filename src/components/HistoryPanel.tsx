@@ -40,7 +40,7 @@ export default function HistoryPanel({
           'bg-white flex flex-col border-gray-200',
           'fixed inset-y-0 right-0 z-50 w-[88vw] max-w-sm shadow-2xl transition-transform duration-200',
           drawerOpen ? 'translate-x-0' : 'translate-x-full',
-          'lg:static lg:z-auto lg:translate-x-0 lg:w-96 lg:max-w-none lg:shrink-0 lg:shadow-none lg:border-l lg:h-screen lg:sticky lg:top-0',
+          'lg:static lg:z-auto lg:translate-x-0 lg:w-96 lg:max-w-none lg:shrink-0 lg:shadow-none lg:border-l lg:h-[calc(100vh-3rem)] lg:sticky lg:top-12',
         ].join(' ')}
       >
         <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 font-semibold text-gray-700">

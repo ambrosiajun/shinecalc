@@ -1,16 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Check,
-  Copy,
-  History,
-  LogOut,
-  RotateCcw,
-  Save,
-  Settings,
-} from 'lucide-react';
+import { Check, Copy, History, RotateCcw, Save, Settings } from 'lucide-react';
 import { calculate, money } from '@/lib/calc';
+import { padEnd, padStart, width } from '@/lib/text';
 import type {
   Config,
   Counts,
@@ -99,11 +92,6 @@ export default function ShineCalc() {
     if (res.ok) setHistory(h => h.filter(e => e.id !== id));
   };
 
-  const logout = async () => {
-    await fetch('/api/logout', { method: 'POST' });
-    window.location.href = '/login';
-  };
-
   if (error) return <div className="p-6 text-red-600">{error}</div>;
   if (!config || !snapshot)
     return <div className="p-6 text-gray-400">Loading...</div>;
@@ -112,12 +100,12 @@ export default function ShineCalc() {
   const driverItems = config.items.filter(i => i.category === 'driver');
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen">
+    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-3rem)]">
       <main className="flex-1 p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 min-w-0 pb-40 lg:pb-6">
         {/* Header */}
         <header className="flex items-center gap-2">
           <h1 className="text-lg sm:text-xl font-bold mr-auto whitespace-nowrap">
-            Shine Calc
+            Old page
           </h1>
           <input
             type="date"
@@ -143,9 +131,6 @@ export default function ShineCalc() {
             title="가격 / Fixed 수정"
           >
             <Settings className="size-4" />
-          </button>
-          <button onClick={logout} className="btn-ghost" title="로그아웃">
-            <LogOut className="size-4" />
           </button>
         </header>
 
@@ -290,21 +275,6 @@ function moveFocus(e: React.KeyboardEvent<HTMLInputElement>) {
   );
   all[all.indexOf(e.currentTarget) + step]?.focus();
 }
-
-/** Display width: Hangul and other full-width chars take two columns. */
-const width = (s: string) =>
-  Array.from(s).reduce(
-    (w, ch) =>
-      w +
-      (/[\u1100-\u11ff\u3000-\u9fff\uac00-\ud7af\uff00-\uffef]/.test(ch)
-        ? 2
-        : 1),
-    0
-  );
-const padEnd = (s: string, n: number) =>
-  s + ' '.repeat(Math.max(0, n - width(s)));
-const padStart = (s: string, n: number) =>
-  ' '.repeat(Math.max(0, n - width(s))) + s;
 
 /**
  * Same layout as the history panel, rows with an amount only:

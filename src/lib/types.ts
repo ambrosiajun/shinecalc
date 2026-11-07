@@ -43,3 +43,22 @@ export type HistoryEntry = {
   created_at: string;
   data: Snapshot;
 };
+
+/** One line of the new entry tables. */
+export type Entry = {
+  id: number;
+  batch_id: number;
+  category: Category;
+  entry_date: string; // YYYY-MM-DD
+  customer: string;
+  item_name: string;
+  price: number;
+  created_at: string;
+};
+
+export type Batch = {
+  id: number;
+  memo: string | null;
+  created_at: string;
+  entries: Entry[];
+};
