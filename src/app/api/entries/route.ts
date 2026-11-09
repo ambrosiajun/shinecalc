@@ -39,7 +39,7 @@ export async function GET(req: Request) {
     ),
     pool.query(
       `SELECT customer FROM shine_entries WHERE customer <> ''
-       GROUP BY customer ORDER BY MAX(id) DESC LIMIT 500`
+       GROUP BY customer ORDER BY MAX(id) DESC LIMIT 5000`
     ),
   ]);
   return NextResponse.json({

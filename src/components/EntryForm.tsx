@@ -7,6 +7,7 @@ import { money } from '@/lib/calc';
 import { entriesText, sumPrice } from '@/lib/entries';
 import type { Category, Config, PriceItem } from '@/lib/types';
 import CopyButton from './CopyButton';
+import CustomerInput from './CustomerInput';
 import PriceEditor from './PriceEditor';
 
 type Row = {
@@ -145,12 +146,6 @@ export default function EntryForm() {
         </div>
       )}
 
-      <datalist id="customer-list">
-        {customers.map(c => (
-          <option key={c} value={c} />
-        ))}
-      </datalist>
-
       <div className="grid gap-3 sm:gap-4 xl:grid-cols-2 items-start">
         {TABLES.map(t => (
           <EntryTable
@@ -158,6 +153,7 @@ export default function EntryForm() {
             title={t.title}
             totalLabel={t.totalLabel}
             items={config.items.filter(i => i.category === t.category)}
+            customers={customers}
             rows={rows[t.category]}
             total={totals[t.category]}
             onChange={next => {
@@ -219,6 +215,7 @@ function EntryTable({
   title,
   totalLabel,
   items,
+  customers,
   rows,
   total,
   onChange,
@@ -226,6 +223,7 @@ function EntryTable({
   title: string;
   totalLabel: string;
   items: PriceItem[];
+  customers: string[];
   rows: Row[];
   total: number;
   onChange: (rows: Row[]) => void;
@@ -294,14 +292,15 @@ function EntryTable({
               className={`${inputCls} order-1`}
               aria-label="날짜"
             />
-            <input
-              name="customer"
-              list="customer-list"
-              value={r.customer}
-              onChange={e => update(r.key, { customer: e.target.value })}
-              placeholder="고객이름"
-              className={`${inputCls} order-2`}
-            />
+            <div className="order-2 min-w-0">
+              <CustomerInput
+                name="customer"
+                value={r.customer}
+                onChange={v => update(r.key, { customer: v })}
+                customers={customers}
+                className={inputCls}
+              />
+            </div>
             <button
               type="button"
               onClick={() => remove(r.key)}
