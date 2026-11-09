@@ -296,8 +296,8 @@ export default function FloatingCalculator() {
           'flex items-center justify-center w-11 h-11',
           'rounded-full border shadow-lg transition-colors',
           open
-            ? 'bg-blue-500 text-white border-blue-600'
-            : 'bg-white text-gray-500 hover:bg-gray-50 border-gray-200',
+            ? 'bg-gray-700 text-white border-gray-800'
+            : 'bg-blue-500 text-white hover:bg-blue-600 border-blue-600',
         ].join(' ')}
         title={open ? 'Close calculator (Esc)' : 'Open calculator'}
         aria-label="Toggle calculator"

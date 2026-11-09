@@ -122,10 +122,10 @@ export default function EntryForm() {
         <h1 className="text-lg font-bold mr-auto">입력</h1>
         <button
           onClick={() => setEditing(true)}
-          className="btn-ghost"
-          title="가격 수정"
+          className="btn-ghost gap-1.5 text-sm"
+          title="가격 / Fixed 수정"
         >
-          <Settings className="size-4" />
+          <Settings className="size-4" /> 가격 설정
         </button>
       </header>
 

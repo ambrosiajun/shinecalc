@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { money } from '@/lib/calc';
 import { sumPrice } from '@/lib/entries';
 import type { Batch } from '@/lib/types';
@@ -30,12 +30,6 @@ export default function BatchHistory() {
       else n.add(id);
       return n;
     });
-
-  const remove = async (id: number) => {
-    if (!confirm('이 저장 묶음을 통째로 삭제할까요?')) return;
-    const res = await fetch(`/api/batches/${id}`, { method: 'DELETE' });
-    if (res.ok) setBatches(bs => bs?.filter(b => b.id !== id) ?? null);
-  };
 
   if (error) return <div className="p-6 text-red-600">{error}</div>;
   if (!batches) return <div className="p-6 text-gray-400">Loading...</div>;
@@ -121,14 +115,6 @@ export default function BatchHistory() {
                     entries={driver}
                     totalLabel="total"
                   />
-                </div>
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => remove(b.id)}
-                    className="flex items-center gap-1 px-2 py-1 rounded border border-red-200 text-red-500 hover:bg-red-50 text-xs"
-                  >
-                    <Trash2 className="size-3" /> 이 묶음 삭제
-                  </button>
                 </div>
               </div>
             )}
